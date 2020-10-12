@@ -444,6 +444,9 @@ Public Class API
         Dim GetGroupFileListAPI As GetGroupFileListDelegate = CType(Marshal.GetDelegateForFunctionPointer(New IntPtr(CInt(json("取群文件列表"))), GetType(GetGroupFileListDelegate)), GetGroupFileListDelegate)
         GetGroupFileList = GetGroupFileListAPI
         GC.KeepAlive(GetGroupFileList)
+        Dim ShareMusicAPI As ShareMusicDelegate = CType(Marshal.GetDelegateForFunctionPointer(New IntPtr(CInt(json("分享音乐"))), GetType(ShareMusicDelegate)), ShareMusicDelegate)
+        ShareMusic = ShareMusicAPI
+        GC.KeepAlive(ShareMusic)
     End Sub
 #End Region
 #Region "函数委托指针"
@@ -554,8 +557,9 @@ Public Class API
     <UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet:=CharSet.Ansi)>
     Public Delegate Sub ReadForwardedChatHistoryDelegate(ByVal pkey As String, ByVal thisQQ As Long, <MarshalAs(UnmanagedType.LPStr)> ByVal resID As String, <MarshalAs(UnmanagedType.LPStr)> ByRef retPtr As String)
     '分享音乐
+    Public Shared ShareMusic As ShareMusicDelegate = Nothing
     <UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet:=CharSet.Ansi)>
-    Public Delegate Function ShareMusic(ByVal pkey As String, ByVal thisQQ As Long, ByVal otherQQ As Long, <MarshalAs(UnmanagedType.LPStr)> ByVal music_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal artist_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal redirect_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal cover_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal file_path As String, ByVal app_type As Integer, ByVal share_type As Integer) As Boolean
+    Public Delegate Function ShareMusicDelegate(ByVal pkey As String, ByVal thisQQ As Long, ByVal otherQQ As Long, <MarshalAs(UnmanagedType.LPStr)> ByVal music_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal artist_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal redirect_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal cover_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal file_path As String, ByVal app_type As Integer, ByVal share_type As Integer) As Boolean
     '更改群聊消息内容
     <UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet:=CharSet.Ansi)>
     Public Delegate Function ModifyGroupMessageContent(ByVal pkey As String, <MarshalAs(UnmanagedType.SysInt)> ByVal data_pointer As Integer, <MarshalAs(UnmanagedType.LPStr)> ByVal new_message_content As String) As Boolean

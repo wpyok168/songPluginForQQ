@@ -62,15 +62,20 @@ Module Main
                         If res <> "" Then
                             Dim jsonstring As Object = New JavaScriptSerializer().DeserializeObject(res)
                             Dim song_url As String = jsonstring("data")
-                            Dim jsonstr = "{""app"":""com.tencent.structmsg"",""config"":{""autosize"":true,""ctime"":1587018511,""forward"":true,""token"":""4e1ddb75bc9b780b4eda43d937a9b721"",""type"":""normal""},""desc"":""音乐"",""meta"":{""music"":{""action"":"""",""android_pkg_name"":"""",""app_type"":1,""appid"":100497308,""desc"":""" + singer + """,""jumpUrl"":""" + jumpUrl + """,""musicUrl"":""" + song_url + """,""preview"":""" + pic_url + """,""sourceMsgId"":""0"",""source_icon"":"""",""source_url"":"""",""tag"":""QQ音乐"",""title"":""" + title + """}},""prompt"":""[分享]" + title + " - QQ音乐"",""ver"":""0.0.0.1"",""view"":""music""}"
-                            API.SendGroupJSONMessage(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, jsonstr, False)
+                            '小栗子不支持某些json消息
+                            'Dim jsonstr = "{""app"":""com.tencent.structmsg"",""config"":{""autosize"":true,""ctime"":1587018511,""forward"":true,""token"":""4e1ddb75bc9b780b4eda43d937a9b721"",""type"":""normal""},""desc"":""音乐"",""meta"":{""music"":{""action"":"""",""android_pkg_name"":"""",""app_type"":1,""appid"":100497308,""desc"":""" + singer + """,""jumpUrl"":""" + jumpUrl + """,""musicUrl"":""" + song_url + """,""preview"":""" + pic_url + """,""sourceMsgId"":""0"",""source_icon"":"""",""source_url"":"""",""tag"":""QQ音乐"",""title"":""" + title + """}},""prompt"":""[分享]" + title + " - QQ音乐"",""ver"":""0.0.0.1"",""view"":""music""}"
+                            'API.SendGroupJSONMessage(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, jsonstr, False)
+                            Dim sucess As Boolean = API.ShareMusic(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+                            If sucess Then
+
+                            End If
                         End If
                     End If
 
                 End If
             End If
         End If
-        Return 1
+        Return 0
     End Function
     'Public Function ReadNetEasySong(SongName As String) As String
     '    Dim res As String = ""
