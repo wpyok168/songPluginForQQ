@@ -7,7 +7,7 @@ Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports System.Web.Script.Serialization
 Imports System.Windows.Forms
-Imports RGiesecke.DllExport
+
 
 Public Class API
 
