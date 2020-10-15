@@ -36,10 +36,16 @@ Module Main
         If sMsg.SenderQQ <> sMsg.ThisQQ Then
             If sMsg.MessageContent.Contains("点歌") Then
                 Dim songname As String = sMsg.MessageContent.Replace("点歌", "").Trim
-                KuwoMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
-                'KugouMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
-                'TencentMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
-                'NetEasyMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                If songname = "" Then Return 0
+                If MusicType = 1 Then
+                    TencentMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                ElseIf MusicType = 2 Then
+                    KugouMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                ElseIf MusicType = 3 Then
+                    KuwoMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                Else
+                    NetEasyMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                End If
             End If
         End If
         Return 0
