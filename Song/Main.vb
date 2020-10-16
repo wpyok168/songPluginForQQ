@@ -11,7 +11,9 @@ Imports System.Web.Script.Serialization
 
 
 Module Main
-
+    Public QQ_Order As New Dictionary(Of Long, Long)
+    Public SongsDics As New Dictionary(Of String, Tuple(Of String, String, String, String, String))
+    Public SongNameList As New List(Of String)
 
 #Region "收到私聊消息"
     Public funRecvicePrivateMsg As RecvicePrivateMsg = New RecvicePrivateMsg(AddressOf RecvicetPrivateMessage)
@@ -32,26 +34,65 @@ Module Main
     <UnmanagedFunctionPointer(CallingConvention.StdCall)>
     Public Delegate Function RecviceGroupMsg(ByRef sMsg As GroupMessageEvent) As Integer
     Public Function RecvicetGroupMessage(ByRef sMsg As GroupMessageEvent) As Integer
-
         If sMsg.SenderQQ <> sMsg.ThisQQ Then
-            If sMsg.MessageContent.Contains("点歌") Then
+            If QQ_Order.ContainsKey(sMsg.SenderQQ) AndAlso QQ_Order.ContainsKey(sMsg.SenderQQ) Then
+                QQ_Order.Remove(sMsg.SenderQQ)
+                If New Regex("^\d{1,2}$").IsMatch(sMsg.MessageContent) = True Then
+                    If Not SongNameList Is Nothing Then
+                        Dim szMsg = sMsg.MessageContent
+                        Dim filteredValues() As String = Array.FindAll(SongNameList.ToArray, Function(s) s.StartsWith(New Regex("^\d{1,2}$").Match(szMsg).Value + "."))
+                        If filteredValues.Count > 0 Then
+                            Dim id = New Regex("^\d{1,2}$").Match(sMsg.MessageContent).Value
+                            Dim song_title As String = filteredValues(0).Split("-")(0).ToString.Replace(id + ".", "").Trim
+                            Dim song_singer As String = filteredValues(0).Split("-")(1).Trim
+                            If SongsDics.Any(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer) Then
+                                If MusicType = 1 Then
+                                    Dim mid As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item5)(0)
+                                    Dim song_id As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Key)(0)
+                                    PlayTencentMusic(song_id, mid, sMsg.MessageGroupQQ)
+                                ElseIf MusicType = 2 Then
+                                    Dim FileHash = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item5)(0)
+                                    PlayKugouMusic(FileHash, sMsg.MessageGroupQQ)
+                                ElseIf MusicType = 3 Then
+                                    Dim rid As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Key)(0)
+                                    Dim pic_url As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item3)(0)
+                                    Dim curTime As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item4)(0)
+                                    Dim reqId As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item5)(0)
+                                    PlayKuwoMusic(rid, reqId, curTime, song_title, song_singer, pic_url, sMsg.MessageGroupQQ)
+                                Else
+                                    Dim songID As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Key)(0)
+                                    Dim pic_url As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item3)(0)
+                                    PlayNetEasyMusic(songID, song_title, song_singer, pic_url, sMsg.MessageGroupQQ)
+                                End If
+
+                            End If
+                        End If
+                    End If
+                Else
+                    API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "]" + vbNewLine + "输入序号不匹配.", False)
+                End If
+            ElseIf sMsg.MessageContent.Contains("点歌") Then
                 Dim songname As String = sMsg.MessageContent.Replace("点歌", "").Trim
                 If songname = "" Then Return 0
+                SongNameList.Clear()
+                QQ_Order.Add(sMsg.SenderQQ, sMsg.MessageGroupQQ)
                 If MusicType = 1 Then
-                    TencentMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                    SongNameList = GetTencentMusicList(songname)
                 ElseIf MusicType = 2 Then
-                    KugouMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                    SongNameList = GetKugouMusicList(songname)
                 ElseIf MusicType = 3 Then
-                    KuwoMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                    SongNameList = GetKuwoMusicList(songname)
                 Else
-                    NetEasyMusic(songname, sMsg.ThisQQ, sMsg.MessageGroupQQ)
+                    SongNameList = GetNetEasyMusicList(songname)
                 End If
+                If SongNameList.Count > 0 Then API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "] 请选择要播放的歌曲项目ID:  " + vbNewLine + String.Join(vbNewLine, SongNameList), False)
             End If
         End If
         Return 0
     End Function
 
-    Public Sub TencentMusic(songname As String, QQId As Long, GroupId As Long)
+    Public Function GetTencentMusicList(songname As String) As List(Of String)
+        Dim SongList As New List(Of String)
         If songname <> "" Then
             Dim mycookiecontainer As CookieContainer = New CookieContainer()
             Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
@@ -69,40 +110,63 @@ Module Main
             Dim res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "", "", head1, mycookiecontainer, redirect_geturl)
             If res <> "" Then
                 Try
-                    Dim json As Object = New JavaScriptSerializer().DeserializeObject(res)
-                    Dim id As String = json("data")("song")("list")(0)("id")
-                    Dim mid As String = json("data")("song")("list")(0)("mid")
-                    Dim pmid As String = json("data")("song")("list")(0)("album")("pmid")
-                    Dim title As String = json("data")("song")("list")(0)("title")
-                    Dim singer As String = json("data")("song")("list")(0)("singer")(0)("name")
-                    Dim jumpUrl As String = "https://y.qq.com/n/yqq/song/" + mid + ".html"
-                    Dim pic_url As String = "http://y.gtimg.cn/music/photo_new/T002R300x300M000" + pmid + ".jpg?max_age=2592000"
-                    url = "https://api.qq.jsososo.com/song/url?id=" + mid
-                    res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "", "", head1, mycookiecontainer, redirect_geturl)
-                    If res <> "" Then
-                        Try
-                            Dim jsonstring As Object = New JavaScriptSerializer().DeserializeObject(res)
-                            Dim song_url As String = jsonstring("data")
-                            '小栗子不支持某些json消息
-                            'Dim jsonstr = "{""app"":""com.tencent.structmsg"",""config"":{""autosize"":true,""ctime"":1587018511,""forward"":true,""token"":""4e1ddb75bc9b780b4eda43d937a9b721"",""type"":""normal""},""desc"":""音乐"",""meta"":{""music"":{""action"":"""",""android_pkg_name"":"""",""app_type"":1,""appid"":100497308,""desc"":""" + singer + """,""jumpUrl"":""" + jumpUrl + """,""musicUrl"":""" + song_url + """,""preview"":""" + pic_url + """,""sourceMsgId"":""0"",""source_icon"":"""",""source_url"":"""",""tag"":""QQ音乐"",""title"":""" + title + """}},""prompt"":""[分享]" + title + " - QQ音乐"",""ver"":""0.0.0.1"",""view"":""music""}"
-                            'API.SendGroupJSONMessage(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, jsonstr, False)
-                            Dim sucess As Boolean = API.ShareMusic(Pinvoke.plugin_key, QQId, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
-                            If sucess Then
-
-                            End If
-                        Catch ex As Exception
-
-                        End Try
-
-                    End If
+                    SongsDics.Clear()
+                    Dim json As Dictionary(Of String, Object) = New JavaScriptSerializer().Deserialize(Of Dictionary(Of String, Object))(res)
+                    Dim count As Integer = DirectCast(json("data")("song")("list"), ArrayList).Count
+                    For i = 0 To count - 1
+                        Dim id As String = json("data")("song")("list")(i)("id")
+                        Dim mid As String = json("data")("song")("list")(i)("mid")
+                        Dim pmid As String = json("data")("song")("list")(i)("album")("pmid")
+                        Dim title As String = json("data")("song")("list")(i)("title")
+                        Dim singer As String = json("data")("song")("list")(i)("singer")(0)("name")
+                        Dim jumpUrl As String = "https://y.qq.com/n/yqq/song/" + mid + ".html"
+                        Dim pic_url As String = "http://y.gtimg.cn/music/photo_new/T002R300x300M000" + pmid + ".jpg?max_age=2592000"
+                        SongsDics.Add(id, New Tuple(Of String, String, String, String, String)(title, singer, pic_url, jumpUrl, mid))
+                        SongList.Add((i + 1).ToString + ". " + title + " - " + singer)
+                        If i > 10 Then Exit For
+                    Next
                 Catch ex As Exception
-
+                    If Not ex.InnerException Is Nothing Then
+                        Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+                    Else
+                        Debug.Print("调用失败: " + ex.Message.ToString)
+                    End If
                 End Try
-
             End If
         End If
+        Return SongList
+    End Function
+    Public Sub PlayTencentMusic(id As String, mid As String, GroupId As Long)
+        Dim mycookiecontainer As CookieContainer = New CookieContainer()
+        Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
+        Dim redirect_geturl = String.Empty
+        Dim head1 = New WebHeaderCollection() From
+        {
+        {"Cache-Control", "max-age=0"},
+        {"If-None-Match", "W/'f3-57Hp5XfYYspy0YS6zeqMLrFfTC0'"},
+        {"Sec-Fetch-Mode", "navigate"},
+        {"Sec-Fetch-Site", "none"},
+        {"Sec-Fetch-User", "?1"},
+        {"Upgrade-Insecure-Requests:1"}
+        }
+        Dim url = "https://api.qq.jsososo.com/song/url?id=" + mid
+        Dim Res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "", "", head1, mycookiecontainer, redirect_geturl)
+        If Res <> "" Then
+            Try
+                Dim jsonstring As Object = New JavaScriptSerializer().DeserializeObject(Res)
+                Dim song_url As String = jsonstring("data")
+                Dim title As String = SongsDics(id).Item1
+                Dim singer As String = SongsDics(id).Item2
+                Dim pic_url As String = SongsDics(id).Item3
+                Dim jumpUrl As String = SongsDics(id).Item4
+                SongsDics.Remove(id)
+                API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+            Catch ex As Exception
+            End Try
+        End If
     End Sub
-    Public Sub KugouMusic(songname As String, QQId As Long, GroupId As Long)
+    Public Function GetKugouMusicList(songname As String) As List(Of String)
+        Dim SongList As New List(Of String)
         Dim mycookiecontainer As CookieContainer = New CookieContainer()
         mycookiecontainer.Add(New Cookie("kg_mid", "37e7d0becb4297c1a1bb8d59a956fa46") With {.Domain = "mobilecdn.kugou.com"})
         mycookiecontainer.Add(New Cookie("Hm_lpvt_aedee6983d4cfc62f509129360d6bb3d", "1602680303") With {.Domain = "mobilecdn.kugou.com"})
@@ -117,43 +181,71 @@ Module Main
         {"Upgrade-Insecure-Requests:1"},
         {"Accept-Language: en-US, en;q=0.9, zh - CN;q=0.8, zh;q=0.7"}
         }
-        Dim FileHash As String = ""
-        Dim AlbumID As String = ""
+
         Dim url = "http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=" + UCase(HttpUtility.UrlEncode(songname)) + "&page=1&pagesize=20&showtype=1"
         Dim res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json; charset=utf-8", "", head1, mycookiecontainer, redirect_geturl)
         If res <> "" Then
             Try
-                Dim jsonstring As Object = New JavaScriptSerializer().DeserializeObject(res)
-                AlbumID = jsonstring("data")("info")(0)("album_id")
-                FileHash = jsonstring("data")("info")(0)("hash")
+                SongsDics.Clear()
+                Dim jsonstring As Dictionary(Of String, Object) = New JavaScriptSerializer().Deserialize(Of Dictionary(Of String, Object))(res)
+                Dim count As Integer = DirectCast(jsonstring("data")("info"), ArrayList).Count
+                For i = 0 To count - 1
+                    Dim AlbumID = jsonstring("data")("info")(i)("album_id")
+                    Dim FileHash = jsonstring("data")("info")(i)("hash")
+                    Dim title As String = jsonstring("data")("info")(i)("songname")
+                    Dim singer As String = jsonstring("data")("info")(i)("singername")
+                    SongsDics.Add(AlbumID, New Tuple(Of String, String, String, String, String)(title, singer, "", "", FileHash))
+                    SongList.Add((i + 1).ToString + ". " + title + " - " + singer)
+                    If i > 10 Then Exit For
+                Next
             Catch ex As Exception
-
+                If Not ex.InnerException Is Nothing Then
+                    Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+                Else
+                    Debug.Print("调用失败: " + ex.Message.ToString)
+                End If
             End Try
-
         End If
-        Dim mycookiecontainer2 As CookieContainer = New CookieContainer()
-        mycookiecontainer2.Add(New Cookie("kg_mid", "37e7d0becb4297c1a1bb8d59a956fa46") With {.Domain = "www.kugou.com"})
-        mycookiecontainer2.Add(New Cookie("Hm_lpvt_aedee6983d4cfc62f509129360d6bb3d", "1602680303") With {.Domain = "www.kugou.com"})
-        mycookiecontainer2.Add(New Cookie("Hm_lvt_aedee6983d4cfc62f509129360d6bb3d", "1602680303") With {.Domain = "www.kugou.com"})
-        mycookiecontainer2.Add(New Cookie("KuGooRandom", "6671602680303344") With {.Domain = "www.kugou.com"})
-        url = "http://www.kugou.com/yy/index.php?r=play/getdata&hash=" + FileHash
-        res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json; charset=utf-8", "", head1, mycookiecontainer2, redirect_geturl)
-        If res <> "" Then
+        Return SongList
+    End Function
+    Public Sub PlayKugouMusic(FileHash As String, GroupId As String)
+        Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
+        Dim redirect_geturl = String.Empty
+        Dim head1 = New WebHeaderCollection() From
+        {
+        {"Pragma", "no-cache"},
+        {"Cache-Control", "no-cache"},
+        {"Sec-Fetch-User", "?1"},
+        {"Upgrade-Insecure-Requests:1"},
+        {"Accept-Language: en-US, en;q=0.9, zh - CN;q=0.8, zh;q=0.7"}
+        }
+        Dim mycookiecontainer1 As CookieContainer = New CookieContainer()
+        mycookiecontainer1.Add(New Cookie("kg_mid", "37e7d0becb4297c1a1bb8d59a956fa46") With {.Domain = "www.kugou.com"})
+        mycookiecontainer1.Add(New Cookie("Hm_lpvt_aedee6983d4cfc62f509129360d6bb3d", "1602680303") With {.Domain = "www.kugou.com"})
+        mycookiecontainer1.Add(New Cookie("Hm_lvt_aedee6983d4cfc62f509129360d6bb3d", "1602680303") With {.Domain = "www.kugou.com"})
+        mycookiecontainer1.Add(New Cookie("KuGooRandom", "6671602680303344") With {.Domain = "www.kugou.com"})
+        Dim url = "http://www.kugou.com/yy/index.php?r=play/getdata&hash=" + FileHash
+        Dim Res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json; charset=utf-8", "", head1, mycookiecontainer1, redirect_geturl)
+        If Res <> "" Then
             Try
-                Dim json = New JavaScriptSerializer().DeserializeObject(res)
+                Dim json = New JavaScriptSerializer().DeserializeObject(Res)
                 Dim pic_url As String = json("data")("img")
                 Dim title As String = json("data")("song_name")
                 Dim singer As String = json("data")("author_name")
                 Dim jumpUrl As String = json("data")("play_url")
                 Dim song_url As String = json("data")("play_backup_url")
-                API.ShareMusic(Pinvoke.plugin_key, QQId, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+                API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
             Catch ex As Exception
-
+                If Not ex.InnerException Is Nothing Then
+                    Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+                Else
+                    Debug.Print("调用失败: " + ex.Message.ToString)
+                End If
             End Try
         End If
     End Sub
-    Public Sub KuwoMusic(songname As String, QQId As Long, GroupId As Long)
-
+    Public Function GetKuwoMusicList(songname As String) As List(Of String)
+        Dim SongList As New List(Of String)
         Dim mycookiecontainer As CookieContainer = New CookieContainer()
         mycookiecontainer.Add(New Cookie("_ga", "GA1.2.1809082709.1602727278") With {.Domain = "www.kuwo.cn"})
         mycookiecontainer.Add(New Cookie("_gid", "GA1.2.1028802585.1602727278") With {.Domain = "www.kuwo.cn"})
@@ -173,50 +265,65 @@ Module Main
         Dim res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json, text/plain, */*", "http://www.kuwo.cn/search/list?key=" + UCase(HttpUtility.UrlEncode(songname)), head1, mycookiecontainer, redirect_geturl)
         If res <> "" Then
             Try
-                Dim json = New JavaScriptSerializer().DeserializeObject(res)
-                Dim reqId As String = json("reqId").ToString.Insert(8, "-").Insert(13, "-").Insert(18, "-").Insert(23, "-")
-                Dim curTime As String = json("curTime")
-                Dim pic_url As String = json("data")("list")(0)("pic")
-                Dim title As String = json("data")("list")(0)("name")
-                Dim singer As String = json("data")("list")(0)("artist")
-                Dim rid As String = json("data")("list")(0)("rid")
-                url = "http://www.kuwo.cn/url?format=mp3&rid=" + rid + "&response=url&type=convert_url3&br=128kmp3&from=web&t=" + curTime + "&httpsStatus=1&reqId=" + reqId
-                res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json, text/plain, */*", "http://www.kuwo.cn/search/list?key=" + UCase(HttpUtility.UrlEncode(songname)), head1, mycookiecontainer, redirect_geturl)
-                If res <> "" Then
-                    Dim jsonstring = New JavaScriptSerializer().DeserializeObject(res)
-                    Dim jumpUrl As String = jsonstring("url")
-                    API.ShareMusic(Pinvoke.plugin_key, QQId, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
-                End If
+                SongsDics.Clear()
+                Dim json As Dictionary(Of String, Object) = New JavaScriptSerializer().Deserialize(Of Dictionary(Of String, Object))(res)
+                Dim count As Integer = DirectCast(json("data")("list"), ArrayList).Count
+                For i = 0 To count - 1
+                    Dim reqId As String = json("reqId").ToString.Insert(8, "-").Insert(13, "-").Insert(18, "-").Insert(23, "-")
+                    Dim curTime As String = json("curTime")
+                    Dim pic_url As String = json("data")("list")(i)("pic")
+                    Dim title As String = json("data")("list")(i)("name")
+                    Dim singer As String = json("data")("list")(i)("artist")
+                    Dim rid As String = json("data")("list")(i)("rid")
+                    SongsDics.Add(rid, New Tuple(Of String, String, String, String, String)(title, singer, pic_url, curTime, reqId))
+                    SongList.Add((i + 1).ToString + ". " + title + " - " + singer)
+                    If i > 10 Then Exit For
+                Next
             Catch ex As Exception
-
+                If Not ex.InnerException Is Nothing Then
+                    Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+                Else
+                    Debug.Print("调用失败: " + ex.Message.ToString)
+                End If
+            End Try
+        End If
+        Return SongList
+    End Function
+    Public Sub PlayKuwoMusic(rid As String, reqId As String, curTime As String, title As String, singer As String, pic_url As String, GroupId As String)
+        Dim mycookiecontainer As CookieContainer = New CookieContainer()
+        mycookiecontainer.Add(New Cookie("_ga", "GA1.2.1809082709.1602727278") With {.Domain = "www.kuwo.cn"})
+        mycookiecontainer.Add(New Cookie("_gid", "GA1.2.1028802585.1602727278") With {.Domain = "www.kuwo.cn"})
+        mycookiecontainer.Add(New Cookie("Hm_lvt_cdb524f42f0ce19b169a8071123a4797", "1602727278") With {.Domain = "www.kuwo.cn"})
+        mycookiecontainer.Add(New Cookie("_gat", "1") With {.Domain = "www.kuwo.cn"})
+        mycookiecontainer.Add(New Cookie("Hm_lpvt_cdb524f42f0ce19b169a8071123a4797", "1602728441") With {.Domain = "www.kuwo.cn"})
+        mycookiecontainer.Add(New Cookie("kw_token", "EHOKWVXE1M") With {.Domain = "www.kuwo.cn"})
+        Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
+        Dim redirect_geturl = String.Empty
+        Dim head1 = New WebHeaderCollection() From
+        {
+        {"csrf: EHOKWVXE1M"},
+        {"If-None-Match: '23975-vAMhe83OnI8ehkAXUyjU+kLga2g'"},
+        {"Accept-Language: th,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6,en-US;q=0.5"}
+        }
+        Dim url = "http://www.kuwo.cn/url?format=mp3&rid=" + rid + "&response=url&type=convert_url3&br=128kmp3&from=web&t=" + curTime + "&httpsStatus=1&reqId=" + reqId
+        Dim Res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json, text/plain, */*", "http://www.kuwo.cn/search/list?key=" + UCase(HttpUtility.UrlEncode(title)), head1, mycookiecontainer, redirect_geturl)
+        If Res <> "" Then
+            Try
+                Dim jsonstring = New JavaScriptSerializer().DeserializeObject(Res)
+                Dim jumpUrl As String = jsonstring("url")
+                API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
+            Catch ex As Exception
+                If Not ex.InnerException Is Nothing Then
+                    Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+                Else
+                    Debug.Print("调用失败: " + ex.Message.ToString)
+                End If
             End Try
 
         End If
-
-
-        Dim host = "http://www.kuwo.cn"
-        ' 根据关键字key获取歌曲的rid值的json数据的接口
-        Dim rid_url = "/api/www/search/searchMusicBykeyWord?key={}"
-        ' 根据rid获取歌曲下载链接的json数据的接口
-        Dim mp3_url = "/url?rid={}&type=convert_url3&br=128kmp3"
-        ' 获取音乐榜 可以得到sourceid
-        Dim bang_menu = "/api/www/bang/bang/bangMenu"
-        ' 获取音乐信息的接口
-        Dim music_info = "/api/www/music/musicInfo?mid={}"
-        ' 根据 musicid 获取歌词信息
-        Dim song_lyric = "http://m.kuwo.cn/newh5/singles/songinfoandlrc?musicId={}"
-        ' 根据bangid 获取音乐列表
-        Dim music_list = "/api/www/bang/bang/musicList?bangId={}&pn={}&rn={}"
-        ' 一些必要的请求头
-        Dim headers = New Dictionary(Of Object, Object) From {
-                {"User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"},
-                {"Referer", "http://www.kuwo.cn/search/list"},
-                {"csrf", "0HQ0UGKNAKR"},
-                {"Cookie", "Hm_lvt_cdb524f42f0ce19b169a8071123a4797=1584003311; _ga=GA1.2.208068437.1584003311; _gid=GA1.2.1613688009.1584003311; Hm_lpvt_cdb524f42f0ce19b169a8071123a4797=1584017980; kw_token=0HQ0UGKNAKR; _gat=1"}
-            }
-
     End Sub
-    Public Function NetEasyMusic(SongName As String, QQId As Long, GroupId As Long) As String
+    Public Function GetNetEasyMusicList(SongName As String) As List(Of String)
+        Dim SongList As New List(Of String)
         Dim res As String = ""
         Dim mycookiecontainer As CookieContainer = New CookieContainer()
         Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
@@ -224,33 +331,75 @@ Module Main
         Dim redirect_geturl = String.Empty
         res = RequestGet("http://music.163.com/api/search/get?csrf_token=hlpretag=&hlposttag=&s={" + SongName + "}&type=1&offset=0&total=true&limit=20", "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, mycookiecontainer, redirect_geturl)
         If res <> "" Then
-            Dim jsonstring As Object = New JavaScriptSerializer().DeserializeObject(res)
-            Dim songID As String = jsonstring("result")("songs")(0)("id")
+            Try
+                SongsDics.Clear()
+                Dim json As Dictionary(Of String, Object) = New JavaScriptSerializer().Deserialize(Of Dictionary(Of String, Object))(res)
+                Dim count As Integer = DirectCast(json("result")("songs"), ArrayList).Count
+                For i = 0 To count - 1
+                    Dim songID As String = json("result")("songs")(i)("id")
+                    Dim pic_url As String = json("result")("songs")(i)("album")("artist")("img1v1Url")
+                    Dim title As String = json("result")("songs")(i)("name")
+                    Dim singer As String = json("result")("songs")(i)("artists")(0)("name")
+                    SongsDics.Add(songID, New Tuple(Of String, String, String, String, String)(title, singer, pic_url, "", ""))
+                    SongList.Add((i + 1).ToString + ". " + title + " - " + singer)
+                    If i > 10 Then Exit For
+                Next
+            Catch ex As Exception
+                If Not ex.InnerException Is Nothing Then
+                    Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+                Else
+                    Debug.Print("调用失败: " + ex.Message.ToString)
+                End If
+            End Try
+
+        End If
+        Return SongList
+    End Function
+    Public Sub PlayNetEasyMusic(songID As String, title As String, singer As String, pic_url As String, GroupId As String)
+        Try
             Dim data As String = "{""ids"":""[" + songID + "]"",""br"":128000,""csrf_token"":""""}"
             Dim retDictionary As List(Of String) = EncrytData(data)
             Dim postdata = String.Join("&", retDictionary)
-            'Dim url = "http://music.163.com/api/song/enhance/player/url?id=" + songID + "&ids=" + "%5B" + songID + "%5D" + "&br=3200000&" + postdata
+            Dim url = "http://music.163.com/api/song/enhance/player/url?id=" + songID + "&ids=" + "%5B" + songID + "%5D" + "&br=3200000&"
+            Dim redirect_geturl = String.Empty
+            Dim head1 As WebHeaderCollection = New WebHeaderCollection()
+            Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
+            Dim mycookiecontainer As CookieContainer = New CookieContainer()
             'mycookiecontainer.Add(New Cookie("_ntes_nnid", "3ddf2945dfda076e60b4ee0162f3c0cd,1488291659575; _ntes_nuid=3ddf2945dfda076e60b4ee0162f3c0cd; vjuids=76bd0b1bc.15acc1b713d.0.73360b94f7956; vjlast=1489483035.1489483035.30; vinfo_n_f_l_n3=e441d5bafac7c9b7.1.0.1489483034993.0.1489483124982; JSESSIONID-WYYY=m%2FO4x3rjCh4e1xfBjmOCZ52hbV7rD7M9U77ZX9qn%2BMw5WeKyU0vnw1zGmpbn%5Ci5ZWmdaRmVjQromGw%2BxForePwG3mBf6jOy27vj1IMOv%5ClM3%2BXkUrPOeM7qPP9HhgO%2F%2Fd%5C1nWUq3mDUIicmtDvWMsUbEeWS%5CbNAJyUO8t%5CbHCy731FHp%3A1489661205597; _iuqxldmzr_=32; __utma=94650624.1301580310.1488291660.1489644772.1489659406.9; __utmb=94650624.4.10.1489659406; __utmc=94650624; __utmz=94650624.1489581581.6.4.utmcsr=baidu|utmccn=(organic)|utmcmd=organic") With {.Domain = "music.163.com"})
-            'res = RequestPost("http://music.163.com/api/song/enhance/player/url?id=" + songID + "&ids=" + "%5B" + songID + "%5D" + "&br=3200000", "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, postdata, mycookiecontainer, myWebHeaderCollection, redirect_geturl)
-            res = RequestGet("http://music.163.com/api/song/detail/?id=" + songID + "&ids=%5B" + songID + "%5D&csrf_token=", "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, mycookiecontainer, redirect_geturl)
-            If res <> "" Then
+            mycookiecontainer.Add(New Cookie("_ntes_nuid", "3ddf2945dfda076e60b4ee0162f3c0cd") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("vjuids", "76bd0b1bc.15acc1b713d.0.73360b94f7956") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("vjlast", "1489483035.1489483035.30") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("vinfo_n_f_l_n3", "e441d5bafac7c9b7.1.0.1489483034993.0.1489483124982") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("JSESSIONID-WYYY", "m%2FO4x3rjCh4e1xfBjmOCZ52hbV7rD7M9U77ZX9qn%2BMw5WeKyU0vnw1zGmpbn%5Ci5ZWmdaRmVjQromGw%2BxForePwG3mBf6jOy27vj1IMOv%5ClM3%2BXkUrPOeM7qPP9HhgO%2F%2Fd") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("_iuqxldmzr_", "32") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("__utma", "94650624.1301580310.1488291660.1489644772.1489659406.9") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("__utmb", "94650624.4.10.1489659406") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("__utmc", "94650624") With {.Domain = "music.163.com"})
+            mycookiecontainer.Add(New Cookie("__utmz", "94650624.1489581581.6.4.utmcsr=baidu|utmccn=(organic)|utmcmd=organic") With {.Domain = "music.163.com"})
+            Dim Res = RequestPost(url, "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, postdata, mycookiecontainer, myWebHeaderCollection, redirect_geturl)
+            'Res = RequestGet(url, "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, mycookiecontainer, redirect_geturl)
+            If Res <> "" Then
                 Try
-                    Dim json = New JavaScriptSerializer().DeserializeObject(res)
-                    Dim id As String = json("songs")(0)("id")
-                    Dim pic_url As String = json("songs")(0)("artists")(0)("picUrl")
-                    Dim title As String = json("songs")(0)("name")
-                    Dim singer As String = json("songs")(0)("artists")(0)("name")
-                    Dim jumpUrl As String = json("songs")(0)("rurl")
-                    Dim song_url As String = json("songs")(0)("mp3Url")
-                    API.ShareMusic(Pinvoke.plugin_key, QQId, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+                    Dim json = New JavaScriptSerializer().DeserializeObject(Res)
+                    Dim jumpUrl As String = json("data")(0)("url")
+                    API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
                 Catch ex As Exception
-
+                    If Not ex.InnerException Is Nothing Then
+                        Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+                    Else
+                        Debug.Print("调用失败: " + ex.Message.ToString)
+                    End If
                 End Try
-
             End If
-        End If
-        Return res
-    End Function
+        Catch ex As Exception
+            If Not ex.InnerException Is Nothing Then
+                Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
+            Else
+                Debug.Print("调用失败: " + ex.Message.ToString)
+            End If
+        End Try
+
+    End Sub
     Private Function AESEncode(ByVal secretData As String, Optional ByVal secret As String = "0CoJUm6Qyw8W8jud") As String
         Dim encrypted() As Byte
         Dim IV() As Byte = Encoding.UTF8.GetBytes("0102030405060708")
