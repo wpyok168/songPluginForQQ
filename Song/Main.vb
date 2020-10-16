@@ -382,7 +382,11 @@ Module Main
                 Try
                     Dim json = New JavaScriptSerializer().DeserializeObject(Res)
                     Dim jumpUrl As String = json("data")(0)("url")
-                    API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
+                    If jumpUrl Is Nothing Or jumpUrl = "" Then
+                        API.SendGroupMsg(Pinvoke.plugin_key, RobotQQ, GroupId, "不支持该歌曲播放", False)
+                    Else
+                        API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
+                    End If
                 Catch ex As Exception
                     If Not ex.InnerException Is Nothing Then
                         Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
