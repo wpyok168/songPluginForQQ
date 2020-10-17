@@ -148,11 +148,11 @@ Public Class API
     <UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet:=CharSet.Ansi)>
     Public Delegate Sub DelegatefunEvent(ByRef EvenType As EventTypeBase)
     Public Shared Sub OnEvent(ByRef EvenType As EventTypeBase)
-
+        RobotQQ = EvenType.ThisQQ
         Select Case EvenType.EventType
             Case EventTypeEnum.This_SignInSuccess
                 Console.WriteLine("登录成功")
-                RobotQQ = EvenType.ThisQQ
+
             Case EventTypeEnum.Friend_NewFriend
                 Console.WriteLine("有新好友")
             Case EventTypeEnum.Friend_FriendRequest
