@@ -5,8 +5,40 @@ Imports System.Text.RegularExpressions
 Imports System.Security.Authentication
 Imports System.Security.Cryptography.X509Certificates
 Imports System.Net.Security
+Imports System.Reflection
 
 Module HttpHelper
+
+    Private RestrictedHeaders() As String = {"Accept", "Connection", "Content-Length", "Content-Type", "Date", "Expect", "Host", "If-Modified-Since", "Keep-Alive", "Proxy-Connection", "Range", "Referer", "Transfer-Encoding", "User-Agent"}
+
+    Private HeaderProperties As New Dictionary(Of String, PropertyInfo)(StringComparer.OrdinalIgnoreCase)
+
+    Sub New()
+        Dim types As Type = GetType(HttpWebRequest)
+        For Each header As String In RestrictedHeaders
+            Dim propertyName As String = header.Replace("-", "")
+            Dim headerProperty As PropertyInfo = types.GetProperty(propertyName)
+            HeaderProperties(header) = headerProperty
+        Next header
+    End Sub
+    'request.SetRawHeader("content-type", "application/json");
+    <System.Runtime.CompilerServices.Extension>
+    Public Sub SetRawHeader(ByVal request As HttpWebRequest, ByVal name As String, ByVal value As String)
+        If HeaderProperties.ContainsKey(name) Then
+            Dim propertyinfo As PropertyInfo = HeaderProperties(name)
+            If propertyinfo.PropertyType Is GetType(DateTime) Then
+                propertyinfo.SetValue(request, DateTime.Parse(value), Nothing)
+            ElseIf propertyinfo.PropertyType Is GetType(Boolean) Then
+                propertyinfo.SetValue(request, Boolean.Parse(value), Nothing)
+            ElseIf propertyinfo.PropertyType Is GetType(Long) Then
+                propertyinfo.SetValue(request, Int64.Parse(value), Nothing)
+            Else
+                propertyinfo.SetValue(request, value, Nothing)
+            End If
+        Else
+            request.Headers(name) = value
+        End If
+    End Sub
 
     Public Function GetAllCookiesFromHeader(ByVal strHeader As String, ByVal strHost As String) As CookieCollection
         Dim al As ArrayList = New ArrayList()
@@ -126,7 +158,7 @@ Module HttpHelper
 
         Return cc
     End Function
-    Public Function RequestGet(ByVal url As String, ByVal headeraccept As String, ByVal contentype As String, ByVal referer As String, ByVal heard As WebHeaderCollection, ByRef cookieContainers As CookieContainer, ByRef redirecturl As String) As String
+    Public Function RequestGet(ByVal url As String, Headerdics As Dictionary(Of String, String), ByVal heard As WebHeaderCollection, ByRef cookieContainers As CookieContainer, ByRef redirecturl As String) As String
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 Or SecurityProtocolType.Ssl3 Or SecurityProtocolType.Tls Or SecurityProtocolType.Tls11
         ServicePointManager.ServerCertificateValidationCallback = Function(sender As Object, certificate As X509Certificate, chain As X509Chain, sslPolicyErrors As SslPolicyErrors)
                                                                       Return True
@@ -143,12 +175,9 @@ Module HttpHelper
         Dim myRequest As HttpWebRequest = WebRequest.Create(url)
         myRequest.Headers = heard
         myRequest.Method = "GET"
-        'myRequest.KeepAlive = True
-        myRequest.Accept = headeraccept
-        myRequest.ContentType = contentype
-        myRequest.Referer = referer
-        myRequest.AllowAutoRedirect = False
-        myRequest.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"
+        For Each pair In Headerdics
+            GetType(HttpWebRequest).GetProperty(pair.Key).SetValue(myRequest, pair.Value, Nothing)
+        Next
         myRequest.CookieContainer = cookieContainers
         Dim results As String = ""
 
@@ -184,7 +213,7 @@ Module HttpHelper
         redirecturl = redirecturl
         Return results
     End Function
-    Public Function RequestPost(ByVal url As String, ByVal headeraccept As String, ByVal contentype As String, ByVal referer As String, ByVal heard As WebHeaderCollection, ByVal postdata As String, ByRef cookieContainers As CookieContainer, ByRef myWebHeaderCollection As WebHeaderCollection, ByRef redirecturl As String) As String
+    Public Function RequestPost(ByVal url As String, Headerdics As Dictionary(Of String, String), ByVal heard As WebHeaderCollection, ByVal postdata As String, ByRef cookieContainers As CookieContainer, ByRef ResponseHeaders As WebHeaderCollection, ByRef redirecturl As String) As String
         If url = "" Then Return ""
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 Or SecurityProtocolType.Ssl3 Or SecurityProtocolType.Tls Or SecurityProtocolType.Tls11
         ServicePointManager.ServerCertificateValidationCallback = Function(sender As Object, certificate As X509Certificate, chain As X509Chain, sslPolicyErrors As SslPolicyErrors)
@@ -205,16 +234,10 @@ Module HttpHelper
             Dim data = Encoding.UTF8.GetBytes(postdata)
             myRequest.Headers = heard
             myRequest.Method = "POST"
-            'myRequest.KeepAlive = True
-            myRequest.Accept = headeraccept
-            myRequest.ContentType = contentype
-            myRequest.Referer = referer
-            myRequest.AllowAutoRedirect = False
-            'myRequest.Headers.Add("Upgrade-Insecure-szRequests", "1")
-            myRequest.Headers.Add("Cache-Control", "max-age=0")
-            myRequest.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"
-            'myRequest.CookieContainer = cookieContainers
-            myRequest.Headers.Add(HttpRequestHeader.Cookie, "os=pc;osver=Microsoft-Windows-10-Professional-build-16299.125-64bit;appver=2.0.3.131777;channel=netease;__remember_me=true")
+            For Each pair In Headerdics
+                GetType(HttpWebRequest).GetProperty(pair.Key).SetValue(myRequest, pair.Value, Nothing)
+            Next
+            myRequest.CookieContainer = cookieContainers
             myRequest.ContentLength = data.Length
             Using stream = myRequest.GetRequestStream()
                 stream.Write(data, 0, data.Length)
@@ -243,7 +266,7 @@ Module HttpHelper
                 If myResponse.Headers("Location") IsNot Nothing Then
                     redirecturl = myResponse.Headers("Location")
                 End If
-                myWebHeaderCollection = myResponse.Headers
+                ResponseHeaders = myResponse.Headers
             End Using
 
         Catch exp As Exception

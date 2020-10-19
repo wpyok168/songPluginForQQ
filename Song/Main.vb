@@ -106,8 +106,16 @@ Module Main
         {"Sec-Fetch-User", "?1"},
         {"Upgrade-Insecure-Requests:1"}
         }
+
+            Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json;charset=UTF-8"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
+
             Dim url = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp?ct=24&qqmusic_ver=1298&new_json=1&remoteplace=txt.yqq.song&searchid=66137917959202681&t=0&aggr=1&cr=1&catZhida=1&lossless=0&flag_qc=0&p=1&n=10&w=” + songname + “&g_tk=5381&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0"
-            Dim res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "", "", head1, mycookiecontainer, redirect_geturl)
+            Dim res = RequestGet(url, Headerdics, head1, mycookiecontainer, redirect_geturl)
             If res <> "" Then
                 Try
                     SongsDics.Clear()
@@ -149,8 +157,14 @@ Module Main
         {"Sec-Fetch-User", "?1"},
         {"Upgrade-Insecure-Requests:1"}
         }
+        Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json;charset=UTF-8"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
         Dim url = "https://api.qq.jsososo.com/song/url?id=" + mid
-        Dim Res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "", "", head1, mycookiecontainer, redirect_geturl)
+        Dim Res = RequestGet(url, Headerdics, head1, mycookiecontainer, redirect_geturl)
         If Res <> "" Then
             Try
                 Dim jsonstring As Object = New JavaScriptSerializer().DeserializeObject(Res)
@@ -182,8 +196,15 @@ Module Main
         {"Accept-Language: en-US, en;q=0.9, zh - CN;q=0.8, zh;q=0.7"}
         }
 
+        Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json;charset=UTF-8"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
+
         Dim url = "http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=" + UCase(HttpUtility.UrlEncode(songname)) + "&page=1&pagesize=20&showtype=1"
-        Dim res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json; charset=utf-8", "", head1, mycookiecontainer, redirect_geturl)
+        Dim res = RequestGet(url, Headerdics, head1, mycookiecontainer, redirect_geturl)
         If res <> "" Then
             Try
                 SongsDics.Clear()
@@ -224,8 +245,18 @@ Module Main
         mycookiecontainer1.Add(New Cookie("Hm_lpvt_aedee6983d4cfc62f509129360d6bb3d", "1602680303") With {.Domain = "www.kugou.com"})
         mycookiecontainer1.Add(New Cookie("Hm_lvt_aedee6983d4cfc62f509129360d6bb3d", "1602680303") With {.Domain = "www.kugou.com"})
         mycookiecontainer1.Add(New Cookie("KuGooRandom", "6671602680303344") With {.Domain = "www.kugou.com"})
+
+        Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json;charset=UTF-8"},
+            {"Referer", "www.kugou.com"},
+            {"Host", "www.kugou.com"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
+
         Dim url = "http://www.kugou.com/yy/index.php?r=play/getdata&hash=" + FileHash
-        Dim Res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json; charset=utf-8", "", head1, mycookiecontainer1, redirect_geturl)
+        Dim Res = RequestGet(url, Headerdics, head1, mycookiecontainer1, redirect_geturl)
         If Res <> "" Then
             Try
                 Dim json = New JavaScriptSerializer().DeserializeObject(Res)
@@ -261,8 +292,17 @@ Module Main
         {"If-None-Match: '23975-vAMhe83OnI8ehkAXUyjU+kLga2g'"},
         {"Accept-Language: th,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6,en-US;q=0.5"}
         }
+        Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json, text/plain, */*"},
+            {"Referer", "http://www.kuwo.cn/search/list?key=" + UCase(HttpUtility.UrlEncode(songname))},
+            {"Host", "www.kuwo.cn"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
+
         Dim url = "http://www.kuwo.cn/api/www/search/searchMusicBykeyWord?key=" + UCase(HttpUtility.UrlEncode(songname)) + "&pn=1&rn=10&httpsStatus=1&reqId=06427b90-0e8d-11eb-a5da-975a5becfc1e"
-        Dim res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json, text/plain, */*", "http://www.kuwo.cn/search/list?key=" + UCase(HttpUtility.UrlEncode(songname)), head1, mycookiecontainer, redirect_geturl)
+        Dim res = RequestGet(url, Headerdics, head1, mycookiecontainer, redirect_geturl)
         If res <> "" Then
             Try
                 SongsDics.Clear()
@@ -305,8 +345,17 @@ Module Main
         {"If-None-Match: '23975-vAMhe83OnI8ehkAXUyjU+kLga2g'"},
         {"Accept-Language: th,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6,en-US;q=0.5"}
         }
+        Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json, text/plain, */*"},
+            {"Referer", "http://www.kuwo.cn/search/list?key=" + UCase(HttpUtility.UrlEncode(title))},
+            {"Host", "www.kuwo.cn"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
+
         Dim url = "http://www.kuwo.cn/url?format=mp3&rid=" + rid + "&response=url&type=convert_url3&br=128kmp3&from=web&t=" + curTime + "&httpsStatus=1&reqId=" + reqId
-        Dim Res = RequestGet(url, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3", "application/json, text/plain, */*", "http://www.kuwo.cn/search/list?key=" + UCase(HttpUtility.UrlEncode(title)), head1, mycookiecontainer, redirect_geturl)
+        Dim Res = RequestGet(url, Headerdics, head1, mycookiecontainer, redirect_geturl)
         If Res <> "" Then
             Try
                 Dim jsonstring = New JavaScriptSerializer().DeserializeObject(Res)
@@ -329,7 +378,16 @@ Module Main
         Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
         Dim head1 As WebHeaderCollection = New WebHeaderCollection()
         Dim redirect_geturl = String.Empty
-        res = RequestGet("http://music.163.com/api/search/get?csrf_token=hlpretag=&hlposttag=&s={" + SongName + "}&type=1&offset=0&total=true&limit=20", "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, mycookiecontainer, redirect_geturl)
+        Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json, text/plain, */*"},
+            {"Referer", "http://music.163.com/search/"},
+            {"Host", "music.163.com"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
+        Dim url = "http://music.163.com/api/search/get?csrf_token=hlpretag=&hlposttag=&s={" + SongName + "}&type=1&offset=0&total=true&limit=20"
+        res = RequestGet(url, Headerdics, head1, mycookiecontainer, redirect_geturl)
         If res <> "" Then
             Try
                 SongsDics.Clear()
@@ -376,7 +434,17 @@ Module Main
             mycookiecontainer.Add(New Cookie("__utmb", "94650624.4.10.1489659406") With {.Domain = "music.163.com"})
             mycookiecontainer.Add(New Cookie("__utmc", "94650624") With {.Domain = "music.163.com"})
             mycookiecontainer.Add(New Cookie("__utmz", "94650624.1489581581.6.4.utmcsr=baidu|utmccn=(organic)|utmcmd=organic") With {.Domain = "music.163.com"})
-            Dim Res = RequestPost(url, "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, postdata, mycookiecontainer, myWebHeaderCollection, redirect_geturl)
+
+            Dim Headerdics As New Dictionary(Of String, String) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
+            {"ContentType", "application/json, text/plain, */*"},
+            {"Referer", "http://music.163.com/search/"},
+            {"Host", "music.163.com"},
+            {"UserAgent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 UBrowser/6.2.4098.3 Safari/537.36"}
+        }
+
+            Dim Res = RequestPost(url, Headerdics, head1, postdata, mycookiecontainer, myWebHeaderCollection, redirect_geturl)
             'Res = RequestGet(url, "application/json, text/javascript, */*; q=0.01", "application/json;charset=UTF-8", "http://music.163.com/search/", head1, mycookiecontainer, redirect_geturl)
             If Res <> "" Then
                 Try
