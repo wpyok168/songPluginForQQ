@@ -33,12 +33,10 @@ Partial Class Form1
         'RadioButton1
         '
         Me.RadioButton1.AutoSize = True
-        Me.RadioButton1.Checked = True
         Me.RadioButton1.Location = New System.Drawing.Point(12, 22)
         Me.RadioButton1.Name = "RadioButton1"
         Me.RadioButton1.Size = New System.Drawing.Size(65, 17)
         Me.RadioButton1.TabIndex = 0
-        Me.RadioButton1.TabStop = True
         Me.RadioButton1.Text = "QQ音乐"
         Me.RadioButton1.UseVisualStyleBackColor = True
         '
@@ -64,10 +62,12 @@ Partial Class Form1
         'RadioButton3
         '
         Me.RadioButton3.AutoSize = True
+        Me.RadioButton3.Checked = True
         Me.RadioButton3.Location = New System.Drawing.Point(162, 22)
         Me.RadioButton3.Name = "RadioButton3"
         Me.RadioButton3.Size = New System.Drawing.Size(73, 17)
         Me.RadioButton3.TabIndex = 3
+        Me.RadioButton3.TabStop = True
         Me.RadioButton3.Text = "酷我音乐"
         Me.RadioButton3.UseVisualStyleBackColor = True
         '

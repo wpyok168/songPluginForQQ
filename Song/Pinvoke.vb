@@ -8,7 +8,7 @@ Public Module Pinvoke
     Public jsonstr, plugin_key As String
     Public PluginStatus As Boolean
     Public RobotQQ As Long
-    Public MusicType As Integer = 1
+    Public MusicType As Integer = 3
 #End Region
 
 

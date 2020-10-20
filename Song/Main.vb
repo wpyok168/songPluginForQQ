@@ -49,20 +49,20 @@ Module Main
                                 If MusicType = 1 Then
                                     Dim mid As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item5)(0)
                                     Dim song_id As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Key)(0)
-                                    PlayTencentMusic(song_id, mid, sMsg.MessageGroupQQ)
+                                    PlayTencentMusic(song_id, mid, sMsg.ThisQQ, sMsg.MessageGroupQQ)
                                 ElseIf MusicType = 2 Then
                                     Dim FileHash = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item5)(0)
-                                    PlayKugouMusic(FileHash, sMsg.MessageGroupQQ)
+                                    PlayKugouMusic(FileHash, sMsg.ThisQQ, sMsg.MessageGroupQQ)
                                 ElseIf MusicType = 3 Then
                                     Dim rid As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Key)(0)
                                     Dim pic_url As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item3)(0)
                                     Dim curTime As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item4)(0)
                                     Dim reqId As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item5)(0)
-                                    PlayKuwoMusic(rid, reqId, curTime, song_title, song_singer, pic_url, sMsg.MessageGroupQQ)
+                                    PlayKuwoMusic(rid, reqId, curTime, song_title, song_singer, pic_url, sMsg.ThisQQ, sMsg.MessageGroupQQ)
                                 Else
                                     Dim songID As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Key)(0)
                                     Dim pic_url As String = SongsDics.Where(Function(x) x.Value.Item1 = song_title And x.Value.Item2 = song_singer).Select(Function(y) y.Value.Item3)(0)
-                                    PlayNetEasyMusic(songID, song_title, song_singer, pic_url, sMsg.MessageGroupQQ)
+                                    PlayNetEasyMusic(songID, song_title, song_singer, pic_url, sMsg.ThisQQ, sMsg.MessageGroupQQ)
                                 End If
 
                             End If
@@ -144,7 +144,7 @@ Module Main
         End If
         Return SongList
     End Function
-    Public Sub PlayTencentMusic(id As String, mid As String, GroupId As Long)
+    Public Sub PlayTencentMusic(id As String, mid As String, thisqq As Long, GroupId As Long)
         Dim mycookiecontainer As CookieContainer = New CookieContainer()
         Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
         Dim redirect_geturl = String.Empty
@@ -174,7 +174,7 @@ Module Main
                 Dim pic_url As String = SongsDics(id).Item3
                 Dim jumpUrl As String = SongsDics(id).Item4
                 SongsDics.Remove(id)
-                API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
             Catch ex As Exception
             End Try
         End If
@@ -229,7 +229,7 @@ Module Main
         End If
         Return SongList
     End Function
-    Public Sub PlayKugouMusic(FileHash As String, GroupId As String)
+    Public Sub PlayKugouMusic(FileHash As String, thisqq As Long, GroupId As String)
         Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
         Dim redirect_geturl = String.Empty
         Dim head1 = New WebHeaderCollection() From
@@ -265,7 +265,7 @@ Module Main
                 Dim singer As String = json("data")("author_name")
                 Dim jumpUrl As String = json("data")("play_url")
                 Dim song_url As String = json("data")("play_backup_url")
-                API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
             Catch ex As Exception
                 If Not ex.InnerException Is Nothing Then
                     Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
@@ -329,7 +329,7 @@ Module Main
         End If
         Return SongList
     End Function
-    Public Sub PlayKuwoMusic(rid As String, reqId As String, curTime As String, title As String, singer As String, pic_url As String, GroupId As String)
+    Public Sub PlayKuwoMusic(rid As String, reqId As String, curTime As String, title As String, singer As String, pic_url As String, thisqq As Long, GroupId As String)
         Dim mycookiecontainer As CookieContainer = New CookieContainer()
         mycookiecontainer.Add(New Cookie("_ga", "GA1.2.1809082709.1602727278") With {.Domain = "www.kuwo.cn"})
         mycookiecontainer.Add(New Cookie("_gid", "GA1.2.1028802585.1602727278") With {.Domain = "www.kuwo.cn"})
@@ -360,7 +360,7 @@ Module Main
             Try
                 Dim jsonstring = New JavaScriptSerializer().DeserializeObject(Res)
                 Dim jumpUrl As String = jsonstring("url")
-                API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
+                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
             Catch ex As Exception
                 If Not ex.InnerException Is Nothing Then
                     Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
@@ -413,7 +413,7 @@ Module Main
         End If
         Return SongList
     End Function
-    Public Sub PlayNetEasyMusic(songID As String, title As String, singer As String, pic_url As String, GroupId As String)
+    Public Sub PlayNetEasyMusic(songID As String, title As String, singer As String, pic_url As String, thisqq As Long, GroupId As String)
         Try
             Dim data As String = "{""ids"":""[" + songID + "]"",""br"":128000,""csrf_token"":""""}"
             Dim retDictionary As List(Of String) = EncrytData(data)
@@ -451,9 +451,9 @@ Module Main
                     Dim json = New JavaScriptSerializer().DeserializeObject(Res)
                     Dim jumpUrl As String = json("data")(0)("url")
                     If jumpUrl Is Nothing Or jumpUrl = "" Then
-                        API.SendGroupMsg(Pinvoke.plugin_key, RobotQQ, GroupId, "不支持该歌曲播放", False)
+                        API.SendGroupMsg(Pinvoke.plugin_key, thisqq, GroupId, "不支持该歌曲播放", False)
                     Else
-                        API.ShareMusic(Pinvoke.plugin_key, RobotQQ, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
+                        API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
                     End If
                 Catch ex As Exception
                     If Not ex.InnerException Is Nothing Then
