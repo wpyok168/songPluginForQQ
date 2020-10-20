@@ -174,7 +174,7 @@ Module Main
                 Dim pic_url As String = SongsDics(id).Item3
                 Dim jumpUrl As String = SongsDics(id).Item4
                 SongsDics.Remove(id)
-                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, song_url, MusicAppTypeEnum.QQMusic, MusicShare_Type.GroupMsg)
             Catch ex As Exception
             End Try
         End If
@@ -265,7 +265,7 @@ Module Main
                 Dim singer As String = json("data")("author_name")
                 Dim jumpUrl As String = json("data")("play_url")
                 Dim song_url As String = json("data")("play_backup_url")
-                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, song_url, 0, 1)
+                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, song_url, MusicAppTypeEnum.KuGouMusic, MusicShare_Type.GroupMsg)
             Catch ex As Exception
                 If Not ex.InnerException Is Nothing Then
                     Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
@@ -360,7 +360,7 @@ Module Main
             Try
                 Dim jsonstring = New JavaScriptSerializer().DeserializeObject(Res)
                 Dim jumpUrl As String = jsonstring("url")
-                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
+                API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, MusicAppTypeEnum.KuWoMusic, MusicShare_Type.GroupMsg)
             Catch ex As Exception
                 If Not ex.InnerException Is Nothing Then
                     Debug.Print("调用失败: " + ex.GetBaseException.Message.ToString)
@@ -453,7 +453,7 @@ Module Main
                     If jumpUrl Is Nothing Or jumpUrl = "" Then
                         API.SendGroupMsg(Pinvoke.plugin_key, thisqq, GroupId, "不支持该歌曲播放", False)
                     Else
-                        API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, 0, 1)
+                        API.ShareMusic(Pinvoke.plugin_key, thisqq, GroupId, title, singer, jumpUrl, pic_url, jumpUrl, MusicAppTypeEnum.WangYiMusic, MusicShare_Type.GroupMsg)
                     End If
                 Catch ex As Exception
                     If Not ex.InnerException Is Nothing Then

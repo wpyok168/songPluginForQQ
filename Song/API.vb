@@ -559,7 +559,7 @@ Public Class API
     '分享音乐
     Public Shared ShareMusic As ShareMusicDelegate = Nothing
     <UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet:=CharSet.Ansi)>
-    Public Delegate Function ShareMusicDelegate(ByVal pkey As String, ByVal thisQQ As Long, ByVal otherQQ As Long, <MarshalAs(UnmanagedType.LPStr)> ByVal music_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal artist_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal redirect_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal cover_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal file_path As String, ByVal app_type As Integer, ByVal share_type As Integer) As Boolean
+    Public Delegate Function ShareMusicDelegate(ByVal pkey As String, ByVal thisQQ As Long, ByVal otherQQ As Long, <MarshalAs(UnmanagedType.LPStr)> ByVal music_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal artist_name As String, <MarshalAs(UnmanagedType.LPStr)> ByVal redirect_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal cover_link As String, <MarshalAs(UnmanagedType.LPStr)> ByVal file_path As String, ByVal app_type As MusicAppTypeEnum, ByVal share_type As MusicShare_Type) As Boolean
     '更改群聊消息内容
     <UnmanagedFunctionPointer(CallingConvention.Winapi, CharSet:=CharSet.Ansi)>
     Public Delegate Function ModifyGroupMessageContent(ByVal pkey As String, <MarshalAs(UnmanagedType.SysInt)> ByVal data_pointer As Integer, <MarshalAs(UnmanagedType.LPStr)> ByVal new_message_content As String) As Boolean
