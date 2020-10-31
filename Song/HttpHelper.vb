@@ -217,9 +217,22 @@ Module HttpHelper
                     redirecturl = myResponse.Headers("Location")
                 End If
             End Using
-
-        Catch exp As Exception
-            Debug.Print(exp.ToString)
+        Catch e As WebException
+            Using response As WebResponse = e.Response
+                Dim httpResponse As HttpWebResponse = CType(response, HttpWebResponse)
+                Console.WriteLine("Error code: {0}", httpResponse.StatusCode)
+                Using data As Stream = response.GetResponseStream()
+                    Using reader = New StreamReader(data)
+                        results = reader.ReadToEnd()
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            If Not ex.InnerException Is Nothing Then
+                Debug.Print(ex.GetBaseException.Message.ToString)
+            Else
+                Debug.Print(ex.Message.ToString)
+            End If
         End Try
         redirecturl = redirecturl
         Return results
@@ -289,9 +302,22 @@ Module HttpHelper
                 End If
                 ResponseHeaders = myResponse.Headers
             End Using
-
-        Catch exp As Exception
-            Debug.Print(exp.ToString)
+        Catch e As WebException
+            Using response As WebResponse = e.Response
+                Dim httpResponse As HttpWebResponse = CType(response, HttpWebResponse)
+                Console.WriteLine("Error code: {0}", httpResponse.StatusCode)
+                Using data As Stream = response.GetResponseStream()
+                    Using reader = New StreamReader(data)
+                        results = reader.ReadToEnd()
+                    End Using
+                End Using
+            End Using
+        Catch ex As Exception
+            If Not ex.InnerException Is Nothing Then
+                Debug.Print(ex.GetBaseException.Message.ToString)
+            Else
+                Debug.Print(ex.Message.ToString)
+            End If
         End Try
 
         Return results
