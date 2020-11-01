@@ -5,8 +5,57 @@ Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Web
 Imports System.Web.Script.Serialization
+Imports HtmlAgilityPack
 
 Public Class NetEasyMusic
+    Private Shared _secretKey As String
+    Private Shared _encSecKey As String
+    Public Shared TopDic As New Dictionary(Of String, Object) From
+        {
+            {"云音乐飙升榜", "19723756"},
+            {"云音乐热歌榜", "3778678"},
+            {"抖音排行榜", "2250011882"},
+            {"云音乐电音榜", "1978921795"}
+        }
+    Private Shared Function Prepare(ByVal raw As String) As Dictionary(Of String, String)
+        Dim data As New Dictionary(Of String, String)()
+        data("params") = AESEncode(raw, "0CoJUm6Qyw8W8jud")
+        data("params") = AESEncode(data("params"), _secretKey)
+        data("encSecKey") = _encSecKey
+        Return data
+    End Function
+
+    Public Shared Function GetTopMusic(id As String) As List(Of String)
+        Dim list As New List(Of String)
+        Dim url = $"https://music.163.com/discover/toplist?id={id}"
+        Dim redirecturl As String = ""
+
+        Dim mycookiecontainer As CookieContainer = New CookieContainer()
+        Dim Headerdics As New Dictionary(Of String, Object) From
+        {
+            {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"},
+            {"Accept-Encoding", "gzip, deflate"},
+            {"X-Requested-With", "XMLHttpRequest"},
+            {"User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.111 Safari/537.36 Edg/86.0.622.51"},
+            {"Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"}
+        }
+        Dim result = HttpHelper.HttpClientGetAsync(url, Headerdics, mycookiecontainer, redirecturl)
+        If result.Result <> "" Then
+            Dim doc As New HtmlAgilityPack.HtmlDocument
+            doc.LoadHtml(result.Result.ToString)
+            Dim res = doc.DocumentNode.SelectNodes("//ul[@class='f-hide']/li")
+            Dim i = 0
+            SongsDics.Clear()
+            For Each item In res
+                Dim songid = item.SelectSingleNode("a").Attributes("href").Value.Split("="c)(1)
+                i += 1
+                list.Add(i.ToString + "." + item.InnerText)
+                SongsDics.Add(songid, New Tuple(Of String, String, String, String, String)(item.InnerText, "", "", "", ""))
+                If i > 19 Then Exit For
+            Next item
+        End If
+        Return list
+    End Function
     Public Shared Function GetNetEasyMusicList(SongName As String) As List(Of String)
         Dim SongList As New List(Of String)
         Dim res As String = ""
@@ -14,7 +63,7 @@ Public Class NetEasyMusic
         Dim myWebHeaderCollection As WebHeaderCollection = New WebHeaderCollection()
         Dim head1 As WebHeaderCollection = New WebHeaderCollection()
         Dim redirect_geturl = String.Empty
-        Dim Headerdics As New Dictionary(Of String, String) From
+        Dim Headerdics As New Dictionary(Of String, Object) From
         {
             {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
             {"ContentType", "application/json, text/plain, */*"},
@@ -71,7 +120,7 @@ Public Class NetEasyMusic
             mycookiecontainer.Add(New Cookie("__utmc", "94650624") With {.Domain = "music.163.com"})
             mycookiecontainer.Add(New Cookie("__utmz", "94650624.1489581581.6.4.utmcsr=baidu|utmccn=(organic)|utmcmd=organic") With {.Domain = "music.163.com"})
 
-            Dim Headerdics As New Dictionary(Of String, String) From
+            Dim Headerdics As New Dictionary(Of String, Object) From
         {
             {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
             {"ContentType", "application/json, text/plain, */*"},
@@ -176,3 +225,5 @@ Public Class NetEasyMusic
     End Function
 
 End Class
+
+

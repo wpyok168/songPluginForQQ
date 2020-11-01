@@ -1,4 +1,5 @@
 ﻿Imports System.Net
+Imports System.Text
 Imports System.Web.Script.Serialization
 
 Public Class TencentMusic
@@ -18,7 +19,7 @@ Public Class TencentMusic
         {"Upgrade-Insecure-Requests:1"}
         }
 
-            Dim Headerdics As New Dictionary(Of String, String) From
+            Dim Headerdics As New Dictionary(Of String, Object) From
         {
             {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
             {"ContentType", "application/json;charset=UTF-8"},
@@ -68,7 +69,7 @@ Public Class TencentMusic
         {"Sec-Fetch-User", "?1"},
         {"Upgrade-Insecure-Requests:1"}
         }
-        Dim Headerdics As New Dictionary(Of String, String) From
+        Dim Headerdics As New Dictionary(Of String, Object) From
         {
             {"Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"},
             {"ContentType", "application/json;charset=UTF-8"},
@@ -90,4 +91,67 @@ Public Class TencentMusic
             End Try
         End If
     End Sub
+
+    Public Shared Function GetTopListCategory() As List(Of TencentKeyValue)
+        Dim list As New List(Of TencentKeyValue)
+        'Dim key As String = "qqmusic-toplist"
+        Dim url = "https://c.y.qq.com/v8/fcg-bin/fcg_v8_toplist_opt.fcg?page=index&format=html&tpl=macv4&v8debug=1&jsonCallback=jsonCallback"
+        Dim client As New WebClient()
+        client.Encoding = Encoding.UTF8
+        Dim result = client.DownloadString(url)
+        result = result.Substring(result.IndexOf("("c) + 1)
+        result = result.Substring(0, result.LastIndexOf(")"))
+        Dim res = New JavaScriptSerializer().Deserialize(Of List(Of TencentTopList))(result)
+        Dim i = 0
+        For Each item In res(0).List
+            i = i + 1
+            Dim id = item.topID.ToString() & "@" & item.update_key
+            list.Add(New TencentKeyValue With {
+                        .Id = id,
+                        .Name = i.ToString + "." + item.ListName
+                    })
+        Next item
+        Return list
+
+    End Function
+
+    Public Shared Function GetTopList(ByVal topId As String, ByVal update_key As String) As List(Of String)
+        Dim SongList As New List(Of String)
+        Dim pagesize As Integer = 100
+        Dim url = $"https://c.y.qq.com/v8/fcg-bin/fcg_v8_toplist_cp.fcg?tpl=3&page=detail&date={update_key}&topid={topId}&type=top&song_begin=0&song_num={pagesize}&g_tk=5381&loginUin=0&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&notice=0&platform=yqq.json&needNewCode=0"
+        Dim client As New WebClient()
+        client.Encoding = Encoding.UTF8
+        Dim result = client.DownloadString(url)
+        Dim json = New JavaScriptSerializer().Deserialize(Of Dictionary(Of String, Object))(result)
+        Dim count As Integer = DirectCast(json("songlist"), ArrayList).Count
+        SongsDics.Clear()
+        For i = 0 To count - 1
+            Dim id As String = json("songlist")(i)("data")("songid")
+            Dim mid As String = json("songlist")(i)("data")("songmid")
+            Dim pmid As String = json("songlist")(i)("data")("singer")(0)("mid")
+            Dim title As String = json("songlist")(i)("data")("songname")
+            Dim singer As String = json("songlist")(i)("data")("singer")(0)("name")
+            Dim jumpUrl As String = "https://y.qq.com/n/yqq/song/" + mid + ".html"
+            Dim pic_url As String = "http://y.gtimg.cn/music/photo_new/T002R300x300M000" + pmid + ".jpg?max_age=2592000"
+            SongsDics.Add(id, New Tuple(Of String, String, String, String, String)(title, singer, pic_url, jumpUrl, mid))
+            SongList.Add((i + 1).ToString + ". " + title + " - " + singer)
+        Next
+        Return SongList
+    End Function
+End Class
+
+Public Class TencentTopList
+    Public Property GroupID As String
+    Public Property GroupName As String
+    Public Property List As List(Of TencentTopListCategory)
+    Public Property Type As Integer
+End Class
+Public Class TencentTopListCategory
+    Public Property ListName As String
+    Public Property topID As Integer
+    Public Property update_key As String
+End Class
+Public Class TencentKeyValue
+    Public Property Id As String
+    Public Property Name As String
 End Class
