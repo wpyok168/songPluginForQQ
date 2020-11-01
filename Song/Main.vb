@@ -111,7 +111,7 @@ Module Main
                         End If
                     End If
                 Else
-                    API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "]" + vbNewLine + "输入序号不匹配.", False)
+                    'API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "]" + vbNewLine + "输入序号不匹配.", False)
                 End If
             ElseIf QQOrder.ContainsKey(sMsg.SenderQQ) AndAlso QQOrder.ContainsKey(sMsg.SenderQQ) Then
                 QQOrder.Remove(sMsg.SenderQQ)
@@ -173,7 +173,7 @@ Module Main
                     If SongNameList.Count > 0 Then API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "] 请选择要播放的歌曲项目ID:  " + vbNewLine + String.Join(vbNewLine, SongNameList), False)
 
                 Else
-                    API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "]" + vbNewLine + "输入序号不匹配.", False)
+                    'API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "]" + vbNewLine + "输入序号不匹配.", False)
                 End If
             ElseIf sMsg.MessageContent.Contains("点歌") Then
                 Dim songname As String = sMsg.MessageContent.Replace("点歌", "").Trim
