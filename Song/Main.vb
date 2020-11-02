@@ -47,6 +47,7 @@ Module Main
                     & "3.【排行榜】: 根据排行榜列表点歌 " & vbNewLine
                 API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, szContent, False)
             ElseIf SourceMusciQQOrder.ContainsKey(sMsg.SenderQQ) AndAlso SourceMusciQQOrder.ContainsKey(sMsg.SenderQQ) Then
+                SourceMusciQQOrder.Clear()
                 If sMsg.MessageContent = "1" Then
                     MusicType = 1
                 ElseIf sMsg.MessageContent = "2" Then
