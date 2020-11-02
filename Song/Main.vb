@@ -42,9 +42,9 @@ Module Main
         If sMsg.SenderQQ <> sMsg.ThisQQ Then
             If sMsg.MessageContent = "点歌菜单" Then
                 Dim szContent = "命令大全:" & vbNewLine _
-                    & "1.【点歌+歌曲名】:搜索歌曲,可用歌曲名、歌手等信息用来搜索" & vbNewLine _
-                    & "2.【切换音乐源】: 切换歌曲的播放源 " & vbNewLine _
-                    & "3.【排行榜】: 根据排行榜列表点歌 " & vbNewLine
+                    & "【点歌+歌曲名】:搜索歌曲,可用歌曲名、歌手等信息用来搜索" & vbNewLine _
+                    & "【切换音乐源】: 切换歌曲的播放源 " & vbNewLine _
+                    & "【排行榜】: 根据排行榜列表点歌 " & vbNewLine
                 API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, szContent, False)
             ElseIf SourceMusciQQOrder.ContainsKey(sMsg.SenderQQ) AndAlso SourceMusciQQOrder.ContainsKey(sMsg.SenderQQ) Then
                 SourceMusciQQOrder.Clear()
@@ -56,6 +56,8 @@ Module Main
                     MusicType = 3
                 ElseIf sMsg.MessageContent = "4" Then
                     MusicType = 4
+                Else
+                    Return 0
                 End If
                 API.SendGroupMsg(Pinvoke.plugin_key, sMsg.ThisQQ, sMsg.MessageGroupQQ, "[@" + sMsg.SenderQQ.ToString + "]" + vbNewLine + "切换完毕.", False)
             ElseIf QQ_subOrder.ContainsKey(sMsg.SenderQQ) AndAlso QQ_subOrder.ContainsKey(sMsg.SenderQQ) Then
