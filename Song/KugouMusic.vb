@@ -36,7 +36,11 @@ Public Class KugouMusic
             doc.LoadHtml(Res)
             Dim i = 0
             SongsDics.Clear()
-            For Each Node As HtmlNode In doc.DocumentNode.SelectNodes("//div[@class='pc_temp_songlist ']/ul/li")
+            Dim nodes = doc.DocumentNode.SelectNodes("//div[@class='pc_temp_songlist ']/ul/li")
+            If nodes Is Nothing Then
+                nodes = doc.DocumentNode.SelectNodes("//div[@class='pc_temp_songlist  pc_rank_songlist_short']/ul/li")
+            End If
+            For Each Node As HtmlNode In nodes
                 For Each link As HtmlNode In Node.SelectNodes(".//a[@href]")
                     i = i + 1
                     Dim songname = link.InnerText.Trim().Split("-")(1).Trim
